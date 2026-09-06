@@ -62,4 +62,3 @@ Use unsupervised learning — **K-Means**, **Hierarchical (Agglomerative) Cluste
 ## Notes
 
 - No target variable exists for this problem; all hyperparameter tuning and model comparison rely on internal clustering metrics (Silhouette Score, Davies-Bouldin Index) rather than supervised cross-validation
-- Add your own GitHub repository link in the notebook's "GitHub Link" section
