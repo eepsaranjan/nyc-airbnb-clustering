@@ -1,5 +1,6 @@
 # nyc-airbnb-clustering
 # Airbnb NYC 2019 — Listing Segmentation using Clustering
+https://eepsaranjan.github.io/nyc-airbnb-clustering/
 
 **Type:** Unsupervised Learning (Clustering)
 **Contribution:** Individual
