@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYC Airbnb Listing Segmentation — Clustering Analysis</title>
+<meta name="description" content="Unsupervised segmentation of ~49,000 NYC Airbnb listings using K-Means, Hierarchical Clustering and DBSCAN, with an interactive segment predictor.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topnav">
+  <div class="brand"><span class="dot"></span> NYC Listing Segments</div>
+  <nav>
+    <a href="#overview">Overview</a>
+    <a href="#explore">Explore the data</a>
+    <a href="#clustering">Clustering</a>
+    <a href="#predictor">Try it</a>
+    <a href="#conclusion">Conclusion</a>
+  </nav>
+</div>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="overview">
+  <div class="hero-copy">
+    <div class="kicker">Unsupervised learning · Airbnb NYC, 2019</div>
+    <h1>Five kinds of listing, found without a single label.</h1>
+    <p>Nearly 49,000 Airbnb listings across New York City, grouped by location, price and booking behavior into segments that hosts and Airbnb's growth team can actually act on — no manual tagging required.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num" id="statRows">—</div><div class="lbl">listings analyzed</div></div>
+      <div class="hero-stat"><div class="num" id="statFeatures">—</div><div class="lbl">engineered features</div></div>
+      <div class="hero-stat"><div class="num" id="statClusters">5</div><div class="lbl">final segments</div></div>
+      <div class="hero-stat"><div class="num" id="statSil">—</div><div class="lbl">silhouette score</div></div>
+    </div>
+  </div>
+  <div class="hero-map-wrap">
+    <div class="map-canvas-wrap" style="height:420px;"><canvas id="heroMap"></canvas></div>
+    <div class="hero-legend" id="heroLegend"></div>
+  </div>
+</section>
+
+<!-- ============ EXPLORE THE DATA ============ -->
+<section class="section" id="explore">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-label">Exploratory data analysis</div>
+      <h2>What's actually in the data</h2>
+      <p>Before clustering anything, it's worth seeing the shape of the market: where listings sit, what they cost, and how actively they're booked.</p>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-panel">
+        <h3>Listing price</h3>
+        <div class="chart-note">Listings under $500/night. Distribution is heavily right-skewed.</div>
+        <canvas id="chartPrice"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3>Listings by borough</h3>
+        <div class="chart-note">Supply is concentrated in two boroughs.</div>
+        <canvas id="chartBorough"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3>Room type share</h3>
+        <div class="chart-note">Shared rooms are a small niche.</div>
+        <canvas id="chartRoomType"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3>Average price by borough</h3>
+        <div class="chart-note">Price tracks proximity to Manhattan.</div>
+        <canvas id="chartAvgPrice"></canvas>
+      </div>
+      <div class="chart-panel full">
+        <h3>Price by room type</h3>
+        <div class="chart-note">Range shown: 1st–3rd quartile box, 0–99th percentile whisker, median marker.</div>
+        <div id="chartPriceBox" class="boxplot"></div>
+      </div>
+      <div class="chart-panel">
+        <h3>Review activity</h3>
+        <div class="chart-note">Number of reviews per listing (log-scaled).</div>
+        <canvas id="chartReviews"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3>Availability (days/year)</h3>
+        <div class="chart-note">Spikes near 0 and 365 — dormant vs. year-round listings.</div>
+        <canvas id="chartAvailability"></canvas>
+      </div>
+      <div class="chart-panel full">
+        <h3>Correlation between numeric features</h3>
+        <div class="chart-note">Weak correlation across most pairs — good news for clustering, since features carry mostly independent signal.</div>
+        <div id="heatmapTable"></div>
+      </div>
+    </div>
+
+    <div class="insight">
+      Manhattan and Brooklyn together hold the large majority of listings and command the highest prices; Staten Island and the Bronx are smaller, cheaper markets. Location alone creates strong, visible separation in the data — which is exactly what clustering needs to work with.
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLUSTERING ============ -->
+<section class="section alt" id="clustering">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-label">Modeling</div>
+      <h2>Three algorithms, one clear winner</h2>
+      <p>K-Means, Agglomerative (hierarchical) clustering and DBSCAN were each tuned and scored with silhouette score and the Davies–Bouldin index — the standard internal metrics for clustering, since there's no ground-truth label to check against.</p>
+    </div>
+
+    <div class="chart-grid" style="margin-bottom:36px;">
+      <div class="chart-panel">
+        <h3>Elbow method (K-Means)</h3>
+        <div class="chart-note">Inertia flattens out from k=4–5 onward.</div>
+        <canvas id="chartElbow"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3>Silhouette score by k</h3>
+        <div class="chart-note">k=5 gives the best balance of separation and interpretability.</div>
+        <canvas id="chartSilK"></canvas>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:14px;">Final model comparison</h3>
+    <div class="model-ledger" id="modelLedger"></div>
+
+    <div class="insight" id="modelInsight"></div>
+
+    <h3 style="margin:38px 0 6px;">The five segments (K-Means, k=5)</h3>
+    <p style="color:var(--muted-dark); font-size:0.92rem; margin-bottom:18px;">Projected onto the first two principal components — which capture about a third of total variance, enough for a rough visual read, while the actual clustering runs on the full 17-feature space.</p>
+    <div class="chart-panel full" style="border:1px solid var(--grid-line-light); margin-bottom:24px;">
+      <canvas id="chartClusterScatter" style="height:380px;"></canvas>
+    </div>
+
+    <div class="cluster-grid" id="clusterGrid"></div>
+  </div>
+</section>
+
+<!-- ============ PREDICTOR ============ -->
+<section class="predictor" id="predictor">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-label">Try it</div>
+      <h2>Which segment would your listing fall into?</h2>
+      <p>Enter a hypothetical listing's details. The prediction runs entirely in your browser, using the same standardization and K-Means centroids trained on the full dataset — no server involved.</p>
+    </div>
+
+    <div class="predictor-grid">
+      <div class="form-panel">
+        <div class="field">
+          <label for="inBorough">Borough</label>
+          <select id="inBorough"></select>
+        </div>
+        <div class="field">
+          <label for="inRoomType">Room type</label>
+          <select id="inRoomType"></select>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="inPrice">Price per night ($)</label>
+            <input type="number" id="inPrice" min="0">
+          </div>
+          <div class="field">
+            <label for="inMinNights">Minimum nights</label>
+            <input type="number" id="inMinNights" min="1">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="inReviews">Total reviews</label>
+            <input type="number" id="inReviews" min="0">
+          </div>
+          <div class="field">
+            <label for="inReviewsMonth">Reviews per month</label>
+            <input type="number" id="inReviewsMonth" min="0" step="0.1">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="inHostListings">Host's total listings</label>
+            <input type="number" id="inHostListings" min="1">
+            <div class="hint">1 = an individual renting their own place</div>
+          </div>
+          <div class="field">
+            <label for="inAvailability">Available days / year</label>
+            <input type="number" id="inAvailability" min="0" max="365">
+          </div>
+        </div>
+        <button class="btn-predict" id="btnPredict">Predict segment</button>
+      </div>
+
+      <div class="result-panel">
+        <div class="map-canvas-wrap" style="height:300px;"><canvas id="predictorMap"></canvas></div>
+        <div class="result-placeholder" id="resultPlaceholder">Fill in the form and predict to see where this listing lands among the 3,000 sampled listings above, and which segment it's closest to.</div>
+        <div class="result-body" id="resultBody" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONCLUSION ============ -->
+<section class="section" id="conclusion">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-label">Conclusion</div>
+      <h2>What the segments are good for</h2>
+    </div>
+    <div class="prose">
+      <p>K-Means with k=5 was selected as the final model: it delivered the strongest balance of silhouette score and Davies–Bouldin index, scales cleanly to all ~49,000 listings (unlike Agglomerative, which needs sampling), and produces five roughly-sized, easy-to-explain segments rather than DBSCAN's noise-heavy, variable-count output. A held-out 20% split confirmed the same five-cluster structure holds on unseen data.</p>
+      <p>Practically, the segments separate everyday listings from two more distinct groups worth acting on differently: a small cluster of frequently-booked, high-turnover entire homes that behave like the platform's most reliable inventory, and a cluster of high-price, low-turnover listings run by hosts with dozens of properties each — a likely commercial/professional segment worth different pricing and support treatment than an individual renting a spare room.</p>
+      <p>Silhouette scores in the 0.24–0.5 range (depending on algorithm and sample) indicate a moderate, genuine cluster structure rather than a clean textbook separation — expected for real-world listing data where segments blend into each other at the edges rather than forming isolated islands.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>Built from the <a href="https://www.kaggle.com/datasets/dgomonov/new-york-city-airbnb-open-data" target="_blank" rel="noopener">NYC Airbnb Open Data (2019)</a> dataset. Analysis adapted from a clustering capstone notebook.</div>
+  <div>Charts rendered client-side · No data leaves your browser</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
